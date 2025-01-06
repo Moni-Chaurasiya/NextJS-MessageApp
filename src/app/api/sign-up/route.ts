@@ -30,10 +30,28 @@ export async function POST(request:Request){
                 },{status:400})
             }else{
                 const hashedPassword =await bcrypt.hash(password,10);
+                verifiedByEmail.username=username;
                 verifiedByEmail.password=hashedPassword;
                 verifiedByEmail.verifyCode=verifyCode;
                 verifiedByEmail.verifyCodeExpiry=new Date(Date.now()+3600000)
                 await verifiedByEmail.save()
+          //      const currentDate = new Date();
+
+        // If the verification code has expired, generate a new one
+    /*    if (verifiedByEmail.verifyCodeExpiry < currentDate) {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            verifiedByEmail.password = hashedPassword;
+            verifiedByEmail.verifyCode = verifyCode;
+            verifiedByEmail.verifyCodeExpiry = new Date(Date.now() + 3600000); // Set new expiry time
+            await verifiedByEmail.save();
+        } else {
+            // Don't modify the verification code if it hasn't expired
+            // You can notify the user that the code hasn't expired and just resend it
+            return Response.json({
+                success: true,
+                message: "A verification code has already been sent to your email. Please check your inbox. If you didn't receive it, you can request a new one."
+            }, { status: 200 });
+        }*/
             }
         }else{
             const hashedPassword = await bcrypt.hash(password,10)
@@ -49,7 +67,8 @@ export async function POST(request:Request){
                 isAcceptingMessage:true,
                 messages:[]
             })
-            await newUser.save()
+            const savedUser=await newUser.save()
+            console.log("Saved User:", savedUser);
         }
         const emailResponse= await sendVerificationEmail(
             email,

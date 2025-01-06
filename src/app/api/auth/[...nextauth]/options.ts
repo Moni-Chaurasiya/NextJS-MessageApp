@@ -8,7 +8,7 @@ export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       id: "credentials",
-      name: "credentials",
+      name: "Credentials",
       credentials: {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
@@ -16,8 +16,10 @@ export const authOptions: NextAuthOptions = {
       //It accept credentials parameter
 
       async authorize(
-        credentials: Record<"email" | "password", string> | undefined
+      //  credentials: Record<"email" | "password", string> | undefined
+      credentials:any
       ): Promise<any> {
+
         if (!credentials) {
           throw new Error("No credentials provided");
         }
@@ -26,7 +28,7 @@ export const authOptions: NextAuthOptions = {
 
         try {
           const user = await UserModel.findOne({
-            $or: [{ email: credentials.email }, { username: credentials.email }],
+            $or: [{ email: credentials.identifier }, { username: credentials.identifier }],
           });
 
           if (!user) {
@@ -77,7 +79,7 @@ export const authOptions: NextAuthOptions = {
     signIn: '/sign-in',
   },
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
   },
   secret: process.env.NEXTAUTH_SECRET
 };

@@ -1,4 +1,4 @@
-import { getServerSession} from "next-auth";
+import { getServerSession} from "next-auth/next";
 import { authOptions} from "../auth/[...nextauth]/options"
 import dbConnect from "@/src/lib/dbConnect"
 import UserModel from "@/src/model/User";
@@ -8,8 +8,7 @@ export async function GET(request:Request){
     await dbConnect();
 
     const session = await getServerSession(authOptions)
-    const user: User = session?.user as User
-
+    
     if (!session || !session.user) {
         return Response.json(
             {
@@ -19,15 +18,28 @@ export async function GET(request:Request){
             { status: 401 }
         )
     }
-    const userId = new mongoose.Types.ObjectId( user._id);
+    const _user = session?.user as User
+    if(!_user._id){
+        return Response.json(
+            {
+                success:false,
+                message:"UserId is missing"
+            },
+            {
+                status:400
+            }
+        )
+    }
+    const userId = new mongoose.Types.ObjectId(_user._id);
 
     try {
         const user = await UserModel.aggregate([
-            {$match:{id:userId}},
-            {$unwind:"$messages"},
+            {$match:{_id:userId}},
+         //   {$unwind:"$messages"},
+            { $unwind: { path: '$messages', preserveNullAndEmptyArrays: true } },
             {$sort:{'messages.createAt':-1}},
-            {$group:{_id:'$_id',messages:{$push:'$message'}}}
-        ])
+            {$group:{_id:'$_id',messages:{$push:'$messages'}}}
+        ]).exec();
 
         /*
 
@@ -71,7 +83,7 @@ export async function GET(request:Request){
             return Response.json(
                 {
                     success: false,
-                    message: "User Not found"
+                    message: "User Not Not found"
                 },
                 { status: 401 }
             )
@@ -85,11 +97,11 @@ export async function GET(request:Request){
             { status: 200 }
         )
     } catch (error) {
-        console.log("Error Getteng Messages", error)
-        return Response.json({
-            success:false,
-            message: "Error Getteng Messages"
-        },{status:500})
+        console.error('An unexpected error occurred:', error);
+        return Response.json(
+          { message: 'Internal server error', success: false },
+          { status: 500 }
+        );
         
     }
 
