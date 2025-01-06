@@ -1,15 +1,15 @@
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "../auth/[...nextauth]/options"
-import dbConnect from "@/lib/dbConnect"
-import UserModel from "@/model/User"
-import { User } from "next-auth"
+import dbConnect from "@/src/lib/dbConnect"
+import UserModel from "@/src/model/User"
+//import { User } from "next-auth"
 
-export async function POST(request: Request) {
+
+export async function POST(request) {
     await dbConnect();
 
     const session = await getServerSession(authOptions)
-    // const user: User = session?.user as User
-    const user = session?.user 
+    const user = session?.user
 
     if (!session || !session.user) {
         return Response.json(
@@ -21,12 +21,12 @@ export async function POST(request: Request) {
         )
     }
     const userId = user._id;
-    const { acceptMessage } = await request.json()
+    const { acceptMessages } = await request.json()
 
     try {
         const updatedUser = await UserModel.findByIdAndUpdate(
             userId,
-            { isAcceptingMessage: acceptMessage },
+            { isAcceptingMessage: acceptMessages },
             { new: true }
         )
         if (!updatedUser) {
@@ -57,57 +57,107 @@ export async function POST(request: Request) {
             { status: 500 }
         )
     }
-
 }
 
-export async function GET(request: Request) {
+
+export async function GET(_request) {
     await dbConnect();
 
-    const session = await getServerSession(authOptions)
-    const user: User = session?.user as User
+    const session = await getServerSession(authOptions);
+    const user = session?.user;
 
-    if (!session || !session.user) {
-        return Response.json(
-            {
+    if (!session || !user) {
+        return new Response(
+            JSON.stringify({
                 success: false,
                 message: "Not Authenticated"
-            },
-            { status: 401 }
-        )
+            }),
+            { status: 401, headers: { "Content-Type": "application/json" } }
+        );
     }
-    const userId = user._id;
 
     try {
-        
-        const userFound = await UserModel.findById(userId)
-    
+        const userId = user._id;
+        const userFound = await UserModel.findById(userId);
+
         if (!userFound) {
-            return Response.json(
-                {
+            return new Response(
+                JSON.stringify({
                     success: false,
-                    message: "failed to found the user"
-                },
-                { status: 403 }
-            )
+                    message: "User not found"
+                }),
+                { status: 404, headers: { "Content-Type": "application/json" } }
+            );
         }
-    
-        return Response.json(
-            {
+
+        return new Response(
+            JSON.stringify({
                 success: true,
                 isAcceptingMessage: userFound.isAcceptingMessage
-            },
-            { status: 200 }
-        )
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+        );
 
     } catch (error) {
-        console.log("Error occur while accepting Message")
-        return Response.json(
-            {
+        console.error("Error occurred while fetching message settings:", error);
+        return new Response(
+            JSON.stringify({
                 success: false,
-                message: "Error occur while accepting Message"
-            },
-            { status: 500 }
-        )
+                message: "Error occurred while fetching message settings"
+            }),
+            { status: 500, headers: { "Content-Type": "application/json" } }
+        );
     }
-
 }
+
+// export async function GET(request) {
+//     await dbConnect();
+
+//     const session = await getServerSession(authOptions)
+//     const user = session?.user 
+
+//     if (!session || !session.user) {
+//         return Response.json(
+//             {
+//                 success: false,
+//                 message: "Not Authenticated"
+//             },
+//             { status: 401 }
+//         )
+//     }
+    
+//     try {
+//         const userId = user._id;
+        
+//         const userFound = await UserModel.findById(userId)
+    
+//         if (!userFound) {
+//             return Response.json(
+//                 {
+//                     success: false,
+//                     message: "failed to found the user"
+//                 },
+//                 { status: 403 }
+//             )
+//         }
+    
+//         return Response.json(
+//             {
+//                 success: true,
+//                 isAcceptingMessage: userFound.isAcceptingMessage
+//             },
+//             { status: 200 }
+//         )
+
+//     } catch (error) {
+//         console.log("Error occur while accepting Message")
+//         return Response.json(
+//             {
+//                 success: false,
+//                 message: "Error occur while accepting Message"
+//             },
+//             { status: 500 }
+//         )
+//     }
+
+// }
