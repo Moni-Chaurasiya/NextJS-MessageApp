@@ -2,6 +2,7 @@ import mongoose, {Schema,Document}   from "mongoose";
 // Document for typeSafty in typeScript
 export interface Message extends Document {
     content:string;
+    image?: string;
     createdAt:Date
 }
 
@@ -9,6 +10,10 @@ const MessageSchema:Schema<Message> = new Schema({
     content:{
         type:String,
         required:true
+    },
+    image:{
+        type:String,
+        required:false
     },
     createdAt:{
         type:Date,
@@ -27,6 +32,7 @@ export interface User extends Document{
      isVerified: boolean;
      isAcceptingMessage:boolean;
      messages:Message[]
+     image?: string;
 }
 
 const UserSchema:Schema<User> = new Schema({
@@ -65,9 +71,13 @@ const UserSchema:Schema<User> = new Schema({
         type:Boolean,
         default:true,
     },
-    messages:[MessageSchema]
+    messages:[MessageSchema],
 
-
+    image: {
+        type: String,
+        required: false,
+        default: ""
+    }
 
 })
 

@@ -1,103 +1,93 @@
-/*
-import dbConnect from "@/src/lib/dbConnect"
-import UserModel from "@/src/model/User";
-import { Message } from "@/src/model/User"
-
-export async function POST(request: Request) {
-    await dbConnect()
-
-    const { username, content } = await request.json();
-    console.log(username)
-    try {
-        const user = await UserModel.findOne({ username }).exec()
-        if (!user) {
-            return Response.json({
-                success: false,
-                message: "User not found "
-            },
-                { status: 401 }
-            )
-        }
-
-        if (!user.isAcceptingMessage) {
-            return Response.json(
-              { message: 'User is not accepting messages', success: false },
-              { status: 403 } // 403 Forbidden status
-            );
-          }
-        const newMessage = { content, createdAt: new Date() }
-
-        user.messages.push(newMessage as Message)
-
-        await user.save();
-
-        return Response.json({
-            success: true,
-            message: " Message send successfully"
-        },
-            { status: 200 }
-        )
-
-    } catch (error) {
-        console.log("Unexpected Error Occur", error)
-        return Response.json({
-            success: false,
-            message: "Unexpected Error Occur"
-        }, { status: 500 })
-
-    }
-}
-    */
-   
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/src/lib/dbConnect';
-import UserModel from '@/src/model/User';
-import { Message } from '@/src/model/User';
+import UserModel, { Message } from '@/src/model/User';
+import uploadFileOnCloudinary from '@/src/helpers/uploadOnCloudinary'; // Fixed import
+import { cloudinaryDB } from '@/src/lib/cloudinary';
+import { join } from 'path';
+import { writeFile, mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   await dbConnect();
-
-  const { username, content } = await request.json();
+  cloudinaryDB();
 
   try {
+    // For App Router, we need to manually handle form data
+    const formData = await request.formData();
+    
+    const username = formData.get('username') as string;
+    const content = formData.get('content') as string;
+    const imageFile = formData.get('image') as File | null;
+
+    if (!username || !content) {
+      return NextResponse.json(
+        { success: false, message: 'Required fields missing' },
+        { status: 400 }
+      );
+    }
+
     const user = await UserModel.findOne({ username }).exec();
 
     if (!user) {
-      return Response.json(
-        {
-          success: false,
-          message: 'User not not not found',
-        },
+      return NextResponse.json(
+        { success: false, message: 'User not found' },
         { status: 404 }
       );
     }
 
     if (!user.isAcceptingMessage) {
-      return Response.json(
-        { message: 'User is not accepting messages', success: false },
+      return NextResponse.json(
+        { success: false, message: 'User is not accepting messages' },
         { status: 403 }
       );
     }
 
-    const newMessage = { content, createdAt: new Date() };
+    let imageUrl: string | undefined;
+
+    if (imageFile) {
+      // First save the file temporarily
+      const bytes = await imageFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      
+      // Ensure temp directory exists
+      const tempDir = join(process.cwd(), 'temp');
+      if (!existsSync(tempDir)) {
+        await mkdir(tempDir, { recursive: true });
+      }
+      
+      const tempFilePath = join(tempDir, imageFile.name);
+      await writeFile(tempFilePath, buffer);
+      
+      // Now upload to cloudinary with proper parameters
+      const uploadResult = await uploadFileOnCloudinary(
+        {
+          name: imageFile.name,
+          mimetype: imageFile.type,
+          tempFilePath: tempFilePath,
+        },
+        'user_messages'
+      );
+
+      imageUrl = uploadResult?.secure_url;
+    }
+
+    const newMessage: Partial<Message> = {
+      content,
+      createdAt: new Date(),
+      image: imageUrl,
+    };
 
     user.messages.push(newMessage as Message);
-
     await user.save();
 
-    return Response.json(
-      {
-        success: true,
-        message: 'Message sent successfully',
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Message sent successfully' 
+    });
   } catch (error) {
-    console.error('Unexpected Error Occurred', error);
-    return Response.json(
-      {
-        success: false,
-        message: 'Unexpected Error Occurred',
-      },
+    console.error('Unexpected Error Occurred:', error);
+    return NextResponse.json(
+      { success: false, message: 'Unexpected Error Occurred' },
       { status: 500 }
     );
   }
