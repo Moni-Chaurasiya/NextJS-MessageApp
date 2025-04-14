@@ -51,6 +51,9 @@ export async function sendVerificationEmail(
   }
 }
 */
+
+// True
+/*
 import { ApiResponse } from "../types/ApiResponse";
 import { transportor } from "../lib/resend"; // Ensure this path is correct
 
@@ -59,6 +62,45 @@ export async function sendVerificationEmail(
   username: string,
   verifyCode: string
 ): Promise<ApiResponse> {
+  try {
+    const emailBody = `
+      <div>
+        <h1>Hi ${username},</h1>
+        <p>Your verification code is: <strong>${verifyCode}</strong></p>
+      </div>
+    `;
+
+    // Send email
+    await transportor.sendMail({
+      from: process.env.MAIL_FROM, 
+      to: email,
+      subject: "Message Verification Code",
+      html: emailBody,
+    });
+
+    return { success: true, message: "Verification email sent successfully" };
+  } catch (emailError) {
+    console.log("Error sending verification email", emailError);
+    return { success: false, message: "Failed to send verification email" };
+  }
+}
+*/
+
+
+
+import { transportor } from "../lib/resend"; // Ensure this path is correct
+// Define a simple interface for the email sending result
+interface EmailResult {
+  success: boolean;
+  message: string;
+}
+
+// Update the function signature to return this type
+export async function sendVerificationEmail(
+  email: string,
+  username: string,
+  verifyCode: string
+): Promise<EmailResult> { // Changed ApiResponse to EmailResult
   try {
     const emailBody = `
       <div>
