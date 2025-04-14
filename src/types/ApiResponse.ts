@@ -25,7 +25,7 @@ export interface ApiResponse {
 }
 */
 
-import { Message } from "../model/User";
+import { Message,User } from "../model/User";
 export interface ProfileUser {
     username: string;
     isAcceptingMessage: boolean;
@@ -35,7 +35,7 @@ export interface ProfileUser {
     success: boolean;
     message: string;
     error: string;
-    user?: ProfileUser;
+    user?: Partial<User>;
     messages?: Array<Message>;
     isAcceptingMessage?: boolean | undefined;
   }

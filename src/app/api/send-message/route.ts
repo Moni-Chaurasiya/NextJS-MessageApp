@@ -50,7 +50,8 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(bytes);
       
       // Ensure temp directory exists
-      const tempDir = join(process.cwd(), 'temp');
+      //const tempDir = join(process.cwd(), 'temp');
+      const tempDir = '/tmp'; // safe in serverless
       if (!existsSync(tempDir)) {
         await mkdir(tempDir, { recursive: true });
       }
