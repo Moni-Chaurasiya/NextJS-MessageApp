@@ -147,6 +147,12 @@ export async function POST(req: Request) {
 }
 */
 
+
+
+//true
+
+
+/*
 import { OpenAI } from 'openai';
 import { NextResponse } from 'next/server';
 
@@ -206,3 +212,4 @@ export async function POST(req: Request) {
     }
   }
 }
+*/
